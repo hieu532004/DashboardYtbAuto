@@ -11,47 +11,35 @@ export default function LoginPage() {
   const router = useRouter();
 
   async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+    e.preventDefault(); setError(''); setLoading(true);
     try {
-      const resp = await apiPost<{ token?: string; accessToken?: string; jwt?: string }>(
-        '/api/auth/login',
-        { username, password }
+      const r = await apiPost<{ token?: string; accessToken?: string; jwt?: string }>(
+        '/api/auth/login', { username, password }
       );
-      const token = resp.token ?? resp.accessToken ?? resp.jwt;
-      if (!token) throw new Error('Không tìm thấy token trong phản hồi');
-
-      // LƯU đúng key này để mọi request sau tự gắn Authorization
-      localStorage.setItem('admin_jwt', token);
-
-      router.replace('/dashboard'); // đổi route theo app của bạn
-    } catch (err: any) {
-      console.error('LOGIN_ERROR', err);
-      setError(err?.body || err?.message || 'Đăng nhập thất bại');
-    } finally {
-      setLoading(false);
-    }
+      const token = r.token ?? r.accessToken ?? r.jwt;
+      if (!token) throw new Error('Không thấy token');
+      localStorage.setItem('admin_jwt', token);     // KEY phải khớp lib/api.ts
+      router.replace('/dashboard');                 // đổi route theo app của bạn
+    } catch (ex: any) {
+      setError(ex?.body || ex?.message || 'Đăng nhập thất bại');
+    } finally { setLoading(false); }
   }
 
   return (
     <div style={{minHeight:'calc(100vh - 120px)', display:'grid', placeItems:'center'}}>
       <form onSubmit={onSubmit} className="card" style={{width:420, padding:24}}>
         <h2>Admin Login</h2>
-        <div className="mt-3">
-          <label className="small">Tên đăng nhập</label>
+        <div className="mt-3"><label>Tên đăng nhập</label>
           <input className="input" value={username} onChange={e=>setUsername(e.target.value)} required />
         </div>
-        <div className="mt-2">
-          <label className="small">Mật khẩu</label>
+        <div className="mt-2"><label>Mật khẩu</label>
           <input className="input" type="password" value={password} onChange={e=>setPassword(e.target.value)} required />
         </div>
         {error && <p className="small" style={{color:'#ff9b9b', marginTop:8}}>{error}</p>}
         <button className="btn" disabled={loading} style={{marginTop:12, width:'100%'}}>
           {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
         </button>
-
-        {/* Debug dòng dưới để bạn chắc chắn FE đang gọi qua proxy */}
+        {/* debug: phải hiện /api-proxy/api/auth/login */}
         <p className="small" style={{opacity:.7, marginTop:10}}>
           API: POST <code>{resolveApiUrl('/api/auth/login')}</code>
         </p>

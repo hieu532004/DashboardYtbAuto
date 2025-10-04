@@ -1,13 +1,13 @@
 // app/api-proxy/[...path]/route.ts
-export const runtime = 'nodejs';           // bắt buộc chạy Node (không dùng Edge)
-export const dynamic = 'force-dynamic';    // tránh cache
+export const runtime = 'nodejs';           // dùng Node runtime
+export const dynamic = 'force-dynamic';    // không cache
 
 import { NextRequest } from 'next/server';
 import { Agent, type Dispatcher } from 'undici';
 
-// IP Upstream (http/https). Ví dụ: https://103.157.204.199 hoặc http://103.157.204.199:8080
+// Upstream API của bạn: https://103.157.204.199 hoặc http://103.157.204.199:8080
 const BASE = (process.env.API_UPSTREAM ?? '').replace(/\/$/, '');
-const insecureTLS = process.env.API_INSECURE_TLS === '1'; // dùng khi upstream là HTTPS IP tự ký
+const insecureTLS = process.env.API_INSECURE_TLS === '1'; // bỏ kiểm TLS khi cert IP không hợp lệ
 const insecureAgent = new Agent({ connect: { rejectUnauthorized: false } });
 
 function cleanHeaders(h: Headers) {
@@ -29,7 +29,7 @@ async function handler(req: NextRequest, { params }: { params: { path: string[] 
     body: ['GET', 'HEAD'].includes(req.method) ? undefined : await req.arrayBuffer(),
     cache: 'no-store',
     redirect: 'follow',
-    dispatcher: insecureTLS ? insecureAgent : undefined,
+    dispatcher: insecureTLS ? insecureAgent : undefined, // chỉ set khi cần bỏ TLS
   };
 
   const res = await fetch(target, init);
