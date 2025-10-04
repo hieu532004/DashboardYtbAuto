@@ -1,19 +1,16 @@
 export const API_BASE = (process.env.NEXT_PUBLIC_API_BASE ?? '').replace(/\/$/, '');
 
 const isBrowser = typeof window !== 'undefined';
-// Tự nhận diện đang chạy trên domain *.vercel.app
-const onVercelDomain = isBrowser && /\.vercel\.app$/i.test(window.location.hostname);
+const onVercel = isBrowser && /\.vercel\.app$/i.test(window.location.hostname);
 
-// Ưu tiên: env bật proxy, hoặc tự bật nếu đang trên Vercel domain
-const forceProxy =
-  process.env.NEXT_PUBLIC_FORCE_PROXY === '1' ||
-  onVercelDomain;
+// Ép proxy nếu bật ENV hoặc đang chạy trên domain Vercel
+const forceProxy = process.env.NEXT_PUBLIC_FORCE_PROXY === '1' || onVercel;
 
 export type ApiError = { status: number; body: string };
 
 export function authHeaders(): Record<string, string> {
   if (!isBrowser) return {};
-  const token = localStorage.getItem('admin_jwt');
+  const token = localStorage.getItem('admin_jwt');        // <-- KEY này rất quan trọng
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -27,17 +24,12 @@ async function handle<T>(res: Response): Promise<T> {
 
 function makeUrl(path: string) {
   const p = path.startsWith('/') ? path : '/' + path;
-  // Trên Vercel hoặc khi bật cờ: ép đi proxy same-origin
-  if (forceProxy) return `/api-proxy${p}`;
-  // Còn lại: gọi thẳng API_BASE (ví dụ local dev, hoặc đã có domain + cert hợp lệ)
-  return `${API_BASE}${p}`;
+  if (forceProxy) return `/api-proxy${p}`;                // trên Vercel đi proxy
+  return `${API_BASE}${p}`;                               // local/dev hoặc có domain HTTPS hợp lệ
 }
 
 export async function apiGet<T>(path: string): Promise<T> {
-  const res = await fetch(makeUrl(path), {
-    headers: { ...authHeaders() },
-    cache: 'no-store',
-  });
+  const res = await fetch(makeUrl(path), { headers: { ...authHeaders() }, cache: 'no-store' });
   return handle<T>(res);
 }
 

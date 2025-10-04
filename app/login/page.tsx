@@ -1,3 +1,4 @@
+// app/login/page.tsx
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -12,20 +13,15 @@ export default function LoginPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
-    setLoading(true);
+    setError(''); setLoading(true);
     try {
       const resp = await apiPost<{ token?: string; accessToken?: string; jwt?: string }>(
-        '/api/auth/login',
-        { username, password }
+        '/api/auth/login', { username, password }
       );
       const token = resp.token ?? resp.accessToken ?? resp.jwt;
-      if (!token) throw new Error('Không tìm thấy token trong phản hồi');
-
-      // LƯU đúng key này để mọi apiGet/apiPost tự gắn Authorization
-      localStorage.setItem('admin_jwt', token);
-
-      router.replace('/dashboard'); // đổi path theo app của bạn
+      if (!token) throw new Error('Không thấy token trong phản hồi');
+      localStorage.setItem('admin_jwt', token);           // <-- KEY trùng với lib/api.ts
+      router.replace('/dashboard');                       // đổi path theo app của bạn
     } catch (err: any) {
       setError(err?.body || err?.message || 'Đăng nhập thất bại');
     } finally {
