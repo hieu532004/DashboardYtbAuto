@@ -1,46 +1,48 @@
-// Chạy ở Node runtime (không phải Edge)
-export const runtime = 'nodejs';
+// app/api-proxy/[...path]/route.ts
+export const runtime = 'nodejs'; // BẮT BUỘC: chạy Node, không dùng Edge
 
 import { NextRequest } from 'next/server';
 import { Agent, type Dispatcher } from 'undici';
 
-const BASE = (process.env.NEXT_PUBLIC_API_BASE ?? '').replace(/\/$/, '');
-
-// DEV only: bỏ kiểm TLS cho cert self-signed của https://103.157.204.199
+// Upstream IP (http/https), ví dụ: https://103.157.204.199
+const BASE = (process.env.API_UPSTREAM ?? '').replace(/\/$/, '');
+// Nếu upstream là HTTPS IP self-signed, bật cờ này để bỏ kiểm TLS ở server-side
+const insecureTLS = process.env.API_INSECURE_TLS === '1';
 const insecureAgent = new Agent({ connect: { rejectUnauthorized: false } });
 
-async function forward(req: NextRequest, { params }: { params: { path: string[] } }) {
+function sanitizeHeaders(h: Headers) {
+  const out = new Headers(h);
+  // Các header nên bỏ khi forward
+  out.delete('host');
+  out.delete('connection');
+  out.delete('content-length');
+  out.delete('accept-encoding'); // tránh compressed stream issues
+  return out;
+}
+
+async function handler(req: NextRequest, { params }: { params: { path: string[] } }) {
+  if (!BASE) return new Response('Missing API_UPSTREAM', { status: 500 });
+
   const target = `${BASE}/${params.path.join('/')}${req.nextUrl.search}`;
 
-  // copy header (trừ host)
-  const headers = new Headers(req.headers);
-  headers.delete('host');
-
-  // dùng intersection type để hợp thức hoá 'dispatcher'
   const init: (RequestInit & { dispatcher?: Dispatcher }) = {
     method: req.method,
-    headers,
+    headers: sanitizeHeaders(req.headers),
     body: ['GET', 'HEAD'].includes(req.method) ? undefined : await req.arrayBuffer(),
-    // chỉ dùng trong DEV để bỏ kiểm TLS
-    dispatcher: process.env.NODE_ENV === 'development' ? insecureAgent : undefined,
-    // cache: 'no-store' // nếu cần tắt cache khi dev
+    cache: 'no-store',
+    redirect: 'follow',
+    dispatcher: insecureTLS ? insecureAgent : undefined, // chỉ dùng khi cần bỏ kiểm TLS
   };
 
   const res = await fetch(target, init);
 
-  // làm sạch header có thể gây lỗi stream
-  const outHeaders = new Headers(res.headers);
-  outHeaders.delete('content-encoding');
-  outHeaders.delete('transfer-encoding');
+  // Dọn dẹp header trả về
+  const headers = new Headers(res.headers);
+  headers.delete('content-encoding');
+  headers.delete('transfer-encoding');
 
-  return new Response(res.body, { status: res.status, headers: outHeaders });
+  return new Response(res.body, { status: res.status, headers });
 }
 
-export {
-  forward as GET,
-  forward as POST,
-  forward as PUT,
-  forward as PATCH,
-  forward as DELETE,
-  forward as OPTIONS,
-};
+// Export cho mọi method
+export { handler as GET, handler as POST, handler as PUT, handler as PATCH, handler as DELETE, handler as OPTIONS }
