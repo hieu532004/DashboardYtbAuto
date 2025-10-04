@@ -1,1 +1,57 @@
-node_modules
+# Node / general
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+.pnpm-store/
+.cache/
+.DS_Store
+Thumbs.db
+*.log
+*.pid
+*.seed
+*.tgz
+
+# Env & secrets (KHÔNG commit)
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.pem
+*.key
+*.crt
+*.cer
+*.snk
+secrets.json
+appsettings.json
+appsettings.*.json
+
+# Build outputs
+dist/
+build/
+.out/
+.vercel/cache/
+.next/
+.nuxt/
+.svelte-kit/
+coverage/
+.tmp/
+temp/
+*.local
+
+# Editors / tools
+.idea/
+.vscode/
+*.swp
+
+# Monorepo & tooling
+**/node_modules/
+**/dist/
+**/build/
+.eslintcache
+.stylelintcache
+.husky/_
+.git-credentials
