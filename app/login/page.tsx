@@ -1,47 +1,55 @@
 'use client';
 import { useState } from 'react';
-import { apiPost } from '@/lib/api';
-import { saveToken } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
+import { apiPost } from '@/lib/api';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState<string>('');
   const router = useRouter();
 
-  async function submit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    setError('');
     setLoading(true);
     try {
-      const resp = await apiPost<{ token: string }>('/api/auth/login', { username, password });
-      saveToken(resp.token);
-      router.replace('/admin');
+      // API trả {"token":"..."} — nếu format khác thì thêm fallback
+      const resp = await apiPost<{ token?: string; accessToken?: string; jwt?: string }>(
+        '/api/auth/login',
+        { username, password }
+      );
+      const token = resp.token ?? resp.accessToken ?? resp.jwt;
+      if (!token) throw new Error('Không tìm thấy token trong phản hồi');
+      localStorage.setItem('admin_jwt', token);
+
+      // (tuỳ dự án) nếu bạn có gọi /api/auth/me để xác thực lại:
+      // const me = await apiGet('/api/auth/me');
+
+      router.replace('/dashboard'); // đổi path theo app của bạn
     } catch (err: any) {
-      setError(err?.body || 'Đăng nhập thất bại');
+      setError(err?.body || err?.message || 'Đăng nhập thất bại');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="container">
-      <div className="card" style={{ maxWidth: 420, margin: '60px auto' }}>
-        <h2>Admin Login</h2>
-        <form onSubmit={submit}>
-          <label>Tên đăng nhập</label>
-          <input className="input" value={username} onChange={e=>setUsername(e.target.value)} placeholder="admin" />
-          <div style={{ height: 12 }} />
+    <div style={{maxWidth:360, margin:'40px auto'}}>
+      <h2>Đăng nhập</h2>
+      <form onSubmit={onSubmit}>
+        <div style={{margin:'8px 0'}}>
+          <label>Tài khoản</label>
+          <input value={username} onChange={e=>setUsername(e.target.value)} required />
+        </div>
+        <div style={{margin:'8px 0'}}>
           <label>Mật khẩu</label>
-          <input className="input" type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="********" />
-          <div style={{ height: 16 }} />
-          <button className="btn" disabled={loading}>{loading ? 'Đang đăng nhập...' : 'Đăng nhập'}</button>
-          {error && <p className="small" style={{ color: '#ffb3b3', marginTop: 10 }}>{error}</p>}
-        </form>
-        <p className="small" style={{ marginTop: 12, opacity: .7 }}>API: POST /api/auth/login</p>
-      </div>
+          <input type="password" value={password} onChange={e=>setPassword(e.target.value)} required />
+        </div>
+        {error && <p style={{color:'#f99'}}>{error}</p>}
+        <button disabled={loading}>{loading ? 'Đang đăng nhập...' : 'Đăng nhập'}</button>
+      </form>
     </div>
   );
 }
