@@ -1,8 +1,8 @@
 {
-  "/(admin)/admin/page": "app/(admin)/admin/page.js",
+  "/api-proxy/[...path]/route": "app/api-proxy/[...path]/route.js",
+  "/(admin)/admin/stats/page": "app/(admin)/admin/stats/page.js",
   "/(admin)/admin/users/page": "app/(admin)/admin/users/page.js",
-  "/(admin)/admin/users/[id]/page": "app/(admin)/admin/users/[id]/page.js",
+  "/(admin)/admin/page": "app/(admin)/admin/page.js",
   "/(admin)/admin/reward-codes/page": "app/(admin)/admin/reward-codes/page.js",
-  "/(admin)/admin/credit/page": "app/(admin)/admin/credit/page.js",
-  "/(admin)/admin/stats/page": "app/(admin)/admin/stats/page.js"
+  "/(admin)/admin/users/[id]/page": "app/(admin)/admin/users/[id]/page.js"
 }

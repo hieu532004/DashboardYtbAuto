@@ -1,5 +1,5 @@
-// lib/api.ts
 export const API_BASE = (process.env.NEXT_PUBLIC_API_BASE ?? '').replace(/\/$/, '');
+const isDev = process.env.NODE_ENV === 'development';
 
 export type ApiError = { status: number; body: string };
 
@@ -14,33 +14,26 @@ async function handle<T>(res: Response): Promise<T> {
     const body = await res.text();
     throw { status: res.status, body } as ApiError;
   }
-  const text = await res.text();
-  if (!text) return undefined as T;
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    return (text as unknown) as T;
-  }
+  return (await res.json()) as T;
+}
+
+function makeUrl(path: string) {
+  const p = path.startsWith('/') ? path : '/' + path;
+  // DEV: gọi qua proxy cùng origin để né TLS/CORS
+  if (isDev) return `/api-proxy${p}`;
+  // PROD: gọi thẳng API
+  return `${API_BASE}${p}`;
 }
 
 export async function apiGet<T>(path: string): Promise<T> {
-  const url = `${API_BASE}${path.startsWith('/') ? path : '/' + path}`;
-  const res = await fetch(url, {
-    headers: { ...authHeaders() },
-    cache: 'no-store',
-  });
+  const res = await fetch(makeUrl(path), { headers: { ...authHeaders() } });
   return handle<T>(res);
 }
 
 export async function apiPost<T>(path: string, body?: any): Promise<T> {
-  const url = `${API_BASE}${path.startsWith('/') ? path : '/' + path}`;
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...authHeaders(),
-  };
-  const res = await fetch(url, {
+  const res = await fetch(makeUrl(path), {
     method: 'POST',
-    headers,
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   return handle<T>(res);

@@ -98,6 +98,31 @@ export default function StatsPage() {
   // Gợi ý danh sách năm gần
   const yearOptions = Array.from({ length: 6 }, (_, i) => nowYear - i); // [2025, 2024, ..., 2020]
 
+  // --- Pagination cho flat table ---
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10); // 10 | 20 | 50 | 100
+
+  // Reset về trang 1 khi dữ liệu/size đổi
+  useEffect(() => { setPage(1); }, [cm, pageSize]);
+
+  const totalRows = flatTable.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+  const startIdx = (page - 1) * pageSize;
+  const endIdx = Math.min(startIdx + pageSize, totalRows);
+
+  const pagedFlat = useMemo(
+    () => flatTable.slice(startIdx, endIdx),
+    [flatTable, startIdx, endIdx]
+  );
+
+  // Tạo dải trang gọn gàng (ví dụ +/-2 quanh trang hiện tại)
+  const pageWindow = 2;
+  const pageNumbers = useMemo(() => {
+    const from = Math.max(1, page - pageWindow);
+    const to = Math.min(totalPages, page + pageWindow);
+    return Array.from({ length: to - from + 1 }, (_, i) => from + i);
+  }, [page, totalPages]);
+
   return (
     <div className="row">
       {/* Pie: Reward Codes */}
@@ -150,22 +175,91 @@ export default function StatsPage() {
             </ResponsiveContainer>
           </div>
 
-          {/* Bảng chi tiết phẳng */}
+          {/* Bảng chi tiết phẳng + phân trang */}
           <div style={{ marginTop: 12, overflowX:'auto' }}>
+            <div style={{ display:'flex', gap:12, alignItems:'center', marginBottom:8, flexWrap:'wrap' }}>
+              <span className="small">Hiển thị</span>
+              <select
+                className="input"
+                value={pageSize}
+                onChange={e => setPageSize(parseInt(e.target.value, 10))}
+                style={{ width: 90 }}
+              >
+                {[10,20,50,100].map(s => <option key={s} value={s}>{s}/trang</option>)}
+              </select>
+
+              <span className="small" style={{ marginLeft: 'auto' }}>
+                {totalRows === 0
+                  ? 'Không có dữ liệu'
+                  : `Hiển thị ${startIdx + 1}–${endIdx} / ${totalRows} bản ghi`}
+              </span>
+            </div>
+
             <table className="table" style={{ minWidth: 720 }}>
               <thead>
                 <tr><th>Tháng</th><th>User</th><th>Tổng xu nạp</th></tr>
               </thead>
               <tbody>
-                {flatTable.map((r, i) => (
-                  <tr key={i}>
+                {pagedFlat.map((r, i) => (
+                  <tr key={`${r.month}-${r.username}-${i}`}>
                     <td>{r.month}</td>
                     <td>{r.username}</td>
                     <td>{r.total}</td>
                   </tr>
                 ))}
+                {pagedFlat.length === 0 && (
+                  <tr><td colSpan={3} style={{ textAlign:'center', opacity:.7, padding:'16px 8px' }}>
+                    Không có dữ liệu để hiển thị
+                  </td></tr>
+                )}
               </tbody>
             </table>
+
+            {/* Thanh phân trang */}
+            <div style={{
+              display:'flex', gap:8, alignItems:'center', justifyContent:'center',
+              marginTop:12, flexWrap:'wrap'
+            }}>
+              <button
+                className="btn"
+                onClick={() => setPage(1)}
+                disabled={page === 1}
+                title="Trang đầu"
+              >«</button>
+              <button
+                className="btn"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                title="Trang trước"
+              >‹</button>
+
+              {pageNumbers[0] > 1 && <span className="small" style={{ opacity:.7 }}>…</span>}
+              {pageNumbers.map(pn => (
+                <button
+                  key={pn}
+                  className="btn"
+                  onClick={() => setPage(pn)}
+                  disabled={pn === page}
+                  style={pn === page ? { opacity: 0.8, fontWeight: 700 } : {}}
+                >
+                  {pn}
+                </button>
+              ))}
+              {pageNumbers[pageNumbers.length - 1] < totalPages && <span className="small" style={{ opacity:.7 }}>…</span>}
+
+              <button
+                className="btn"
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                title="Trang sau"
+              >›</button>
+              <button
+                className="btn"
+                onClick={() => setPage(totalPages)}
+                disabled={page === totalPages}
+                title="Trang cuối"
+              >»</button>
+            </div>
           </div>
 
           <p className="small" style={{ marginTop:8 }}>

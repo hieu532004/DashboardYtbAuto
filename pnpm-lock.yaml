@@ -20,6 +20,9 @@ importers:
       recharts:
         specifier: 2.10.3
         version: 2.10.3(prop-types@15.8.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      undici:
+        specifier: ^7.16.0
+        version: 7.16.0
     devDependencies:
       '@types/node':
         specifier: 20.12.7
@@ -350,6 +353,10 @@ packages:
   undici-types@5.26.5:
     resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
 
+  undici@7.16.0:
+    resolution: {integrity: sha512-QEg3HPMll0o3t2ourKwOeUAZ159Kn9mx5pnzHRQO8+Wixmh88YdZRiIwat0iNzNNXn0yoEtXJqFpyW7eM8BV7g==}
+    engines: {node: '>=20.18.1'}
+
   victory-vendor@36.9.2:
     resolution: {integrity: sha512-PnpQQMuxlwYdocC8fIJqVXvkeViHYzotI+NJrCuav0ZYFoq912ZHBk3mCeuj+5/VpodOjPe1z0Fk2ihgzlXqjQ==}
 
@@ -619,6 +626,8 @@ snapshots:
   typescript@5.4.5: {}
 
   undici-types@5.26.5: {}
+
+  undici@7.16.0: {}
 
   victory-vendor@36.9.2:
     dependencies:
